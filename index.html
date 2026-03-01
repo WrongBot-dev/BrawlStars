@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brawl Stars Arena</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    background: linear-gradient(135deg, #1a0a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+}
+#gameContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+#topBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 800px;
+    padding: 8px 15px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 10px;
+    color: white;
+}
+#brawlerInfo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+#brawlerIcon {
+    font-size: 28px;
+}
+#brawlerName {
+    font-weight: bold;
+    font-size: 16px;
+}
+#healthBar {
+    width: 150px;
+    height: 18px;
+    background: #333;
+    border-radius: 9px;
+    overflow: hidden;
+    border: 2px solid #555;
+}
+#healthFill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    transition: width 0.2s;
+}
+#superBar {
+    width: 100px;
+    height: 14px;
+    background: #333;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 2px solid #FFD700;
+}
+#superFill {
+    height: 100%;
+    background: linear-gradient(90deg, #FFD700, #FFA500);
+    width: 0%;
+    transition: width 0.2s;
+}
+#ammoContainer {
+    display: flex;
+    gap: 4px;
+}
+.ammo {
+    width: 12px;
+    height: 25px;
+    background: #FFD700;
+    border-radius: 3px;
+    transition: background 0.2s;
+}
+.ammo.empty { background: #444; }
+#gameStats {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+}
+#canvas {
+    border: 3px solid #4a4a6a;
+    border-radius: 10px;
+    cursor: crosshair;
+}
+#controls {
+    display: flex;
+    gap: 20px;
+    padding: 8px 15px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 10px;
+    color: #aaa;
+    font-size: 12px;
+}
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+#menuPanel {
+    background: linear-gradient(135deg, #2d2d44, #1a1a2e);
+    padding: 25px;
+    border-radius: 20px;
+    text-align: center;
+    color: white;
+    border: 3px solid #4a4a6a;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+#menuPanel h1 { font-size: 28px; margin-bottom: 10px; color: #FFD700; }
+#menuPanel h2 { font-size: 18px; margin: 15px 0 10px; color: #4FC3F7; }
+.brawler-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+    margin-bottom: 15px;
+    max-width: 700px;
+}
+.brawler-select {
+    width: 60px;
+    height: 70px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #666;
+    transition: all 0.2s;
+    font-size: 9px;
+    color: white;
+}
+.brawler-select:hover { transform: scale(1.1); border-color: #FFD700; }
+.brawler-select.selected { border-color: #FFD700; box-shadow: 0 0 15px #FFD700; }
+.brawler-select .icon { font-size: 22px; }
+.brawler-select .name { margin-top: 2px; text-align: center; line-height: 1.1; }
+.rarity-common { background: linear-gradient(135deg, #78909C, #546E7A); }
+.rarity-rare { background: linear-gradient(135deg, #4CAF50, #388E3C); }
+.rarity-superrare { background: linear-gradient(135deg, #2196F3, #1976D2); }
+.rarity-epic { background: linear-gradient(135deg, #9C27B0, #7B1FA2); }
+.rarity-mythic { background: linear-gradient(135deg, #F44336, #D32F2F); }
+.rarity-legendary { background: linear-gradient(135deg, #FFD700, #FFA000); }
+#startBtn {
+    padding: 15px 50px;
+    font-size: 20px;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    margin-top: 15px;
+    font-weight: bold;
+}
+#startBtn:hover { transform: scale(1.05); }
+#gameOverPanel {
+    background: linear-gradient(135deg, #2d2d44, #1a1a2e);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    color: white;
+    border: 3px solid #4a4a6a;
+    display: none;
+}
+#gameOverPanel h1 { font-size: 36px; margin-bottom: 15px; }
+#gameOverPanel p { font-size: 18px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+    <div id="topBar">
+        <div id="brawlerInfo">
+            <span id="brawlerIcon">🤠</span>
+            <span id="brawlerName">Shelly</span>
+        </div>
+        <div id="healthBar"><div id="healthFill" style="width:100%"></div></div>
+        <div id="ammoContainer">
+            <div class="ammo"></div>
+            <div class="ammo"></div>
+            <div class="ammo"></div>
+        </div>
+        <div style="text-align:center">
+            <div style="font-size:10px;color:#FFD700">SUPER</div>
+            <div id="superBar"><div id="superFill"></div></div>
+        </div>
+        <div id="gameStats">
+            <span>🏆 Alive: <span id="aliveCount">10</span></span>
+            <span>💀 Kills: <span id="killCount">0</span></span>
+        </div>
+    </div>
+    <canvas id="canvas" width="800" height="550"></canvas>
+    <div id="controls">
+        <span>🎮 WASD: Move</span>
+        <span>🖱️ Click: Attack</span>
+        <span>⚡ Space/RightClick: Super</span>
+        <span>🔄 R: Reload</span>
+    </div>
+</div>
+
+<div id="overlay">
+    <div id="menuPanel">
+        <h1>⭐ BRAWL STARS ARENA ⭐</h1>
+        <p style="color:#aaa;margin-bottom:15px">Select your Brawler (80+ Brawlers!)</p>
+
+        <h2>🏆 Trophy Road</h2>
+        <div class="brawler-grid" id="trophyRoad"></div>
+
+        <h2>💚 Rare</h2>
+        <div class="brawler-grid" id="rareBrawlers"></div>
+
+        <h2>💙 Super Rare</h2>
+        <div class="brawler-grid" id="superRareBrawlers"></div>
+
+        <h2>💜 Epic</h2>
+        <div class="brawler-grid" id="epicBrawlers"></div>
+
+        <h2>❤️ Mythic</h2>
+        <div class="brawler-grid" id="mythicBrawlers"></div>
+
+        <h2>💛 Legendary</h2>
+        <div class="brawler-grid" id="legendaryBrawlers"></div>
+
+        <button id="startBtn">⚔️ START BATTLE!</button>
+    </div>
+
+    <div id="gameOverPanel">
+        <h1 id="resultTitle">🏆 VICTORY!</h1>
+        <p id="resultText">You are the last brawler standing!</p>
+        <p>Kills: <span id="finalKills">0</span></p>
+        <button id="startBtn2" onclick="location.reload()">🔄 PLAY AGAIN</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// ============ ALL BRAWLERS DATABASE (80+ Brawlers up to Nov 2025) ============
+const ALL_BRAWLERS = [
+    // TROPHY ROAD (12)
+    { id: 1, name: "Shelly", icon: "🤠", rarity: "common", hp: 3600, dmg: 300, reload: 1.5, range: 200, speed: 2.5, projectiles: 5, spread: 30, attackType: "shotgun", superType: "superShotgun", superDmg: 400, desc: "Shotgun blast" },
+    { id: 2, name: "Nita", icon: "🐻", rarity: "common", hp: 4000, dmg: 800, reload: 1.2, range: 180, speed: 2.5, attackType: "shockwave", superType: "spawnBear", desc: "Shockwave + Bear" },
+    { id: 3, name: "Colt", icon: "🔫", rarity: "common", hp: 2800, dmg: 300, reload: 1.6, range: 280, speed: 2.7, projectiles: 6, attackType: "burst", superType: "superBurst", superDmg: 400, desc: "Dual revolvers" },
+    { id: 4, name: "Bull", icon: "🐂", rarity: "common", hp: 5000, dmg: 400, reload: 1.6, range: 140, speed: 2.5, projectiles: 5, spread: 25, attackType: "shotgun", superType: "charge", desc: "Close-range tank" },
+    { id: 5, name: "Jessie", icon: "🔧", rarity: "common", hp: 3200, dmg: 820, reload: 1.8, range: 220, speed: 2.5, attackType: "bounce", superType: "spawnTurret", desc: "Bouncing orb + Turret" },
+    { id: 6, name: "Brock", icon: "🚀", rarity: "common", hp: 2600, dmg: 1040, reload: 2.0, range: 300, speed: 2.5, attackType: "rocket", superType: "rocketBarrage", desc: "Long-range rockets" },
+    { id: 7, name: "Dynamike", icon: "💣", rarity: "common", hp: 2800, dmg: 760, reload: 1.8, range: 200, speed: 2.5, attackType: "lob", superType: "bigBomb", superDmg: 2200, desc: "Throwable dynamite" },
+    { id: 8, name: "Bo", icon: "🦅", rarity: "common", hp: 3400, dmg: 520, reload: 1.7, range: 240, speed: 2.5, projectiles: 3, attackType: "triple", superType: "mines", desc: "Triple arrows + Mines" },
+    { id: 9, name: "Tick", icon: "💥", rarity: "common", hp: 2200, dmg: 640, reload: 2.0, range: 260, speed: 2.4, attackType: "mineLob", superType: "headRush", desc: "Mine thrower" },
+    { id: 10, name: "8-Bit", icon: "🕹️", rarity: "common", hp: 4000, dmg: 320, reload: 1.5, range: 240, speed: 2.0, projectiles: 6, attackType: "burst", superType: "boostPad", desc: "Slow but powerful" },
+    { id: 11, name: "Emz", icon: "📱", rarity: "common", hp: 3600, dmg: 500, reload: 2.0, range: 200, speed: 2.5, attackType: "spray", superType: "aoeCloud", desc: "Hairspray damage" },
+    { id: 12, name: "Stu", icon: "🏍️", rarity: "common", hp: 2800, dmg: 540, reload: 1.3, range: 200, speed: 2.8, attackType: "fireBurst", superType: "dash", desc: "Fast dash attacks" },
+
+    // RARE (4)
+    { id: 13, name: "El Primo", icon: "🤼", rarity: "rare", hp: 5800, dmg: 360, reload: 0.8, range: 80, speed: 2.6, projectiles: 4, attackType: "punch", superType: "elbow", desc: "Wrestling champion" },
+    { id: 14, name: "Barley", icon: "🍺", rarity: "rare", hp: 2600, dmg: 680, reload: 1.9, range: 220, speed: 2.4, attackType: "areaLob", superType: "barrage", desc: "Area denial" },
+    { id: 15, name: "Poco", icon: "🎸", rarity: "rare", hp: 3800, dmg: 660, reload: 1.6, range: 220, speed: 2.4, attackType: "wideWave", superType: "heal", healAmount: 1800, desc: "Healing musician" },
+    { id: 16, name: "Rosa", icon: "🌹", rarity: "rare", hp: 5200, dmg: 460, reload: 1.0, range: 90, speed: 2.5, projectiles: 3, attackType: "punch", superType: "shield", desc: "Tanky brawler" },
+
+    // SUPER RARE (6)
+    { id: 17, name: "Rico", icon: "🎰", rarity: "superrare", hp: 2800, dmg: 320, reload: 1.5, range: 260, speed: 2.5, projectiles: 5, attackType: "bounce", superType: "superBounce", desc: "Bouncing bullets" },
+    { id: 18, name: "Darryl", icon: "🛢️", rarity: "superrare", hp: 4200, dmg: 280, reload: 1.4, range: 120, speed: 2.5, projectiles: 10, spread: 40, attackType: "shotgun", superType: "roll", desc: "Rolling robot" },
+    { id: 19, name: "Penny", icon: "💰", rarity: "superrare", hp: 3200, dmg: 900, reload: 1.9, range: 240, speed: 2.5, attackType: "splash", superType: "cannon", desc: "Pirate + Cannon" },
+    { id: 20, name: "Carl", icon: "⛏️", rarity: "superrare", hp: 4200, dmg: 640, reload: 2.0, range: 220, speed: 2.5, attackType: "boomerang", superType: "spin", desc: "Spinning pickaxe" },
+    { id: 21, name: "Jacky", icon: "🔨", rarity: "superrare", hp: 5000, dmg: 1120, reload: 1.4, range: 100, speed: 2.5, attackType: "groundPound", superType: "pull", desc: "Ground pound" },
+    { id: 22, name: "Gale", icon: "❄️", rarity: "superrare", hp: 3400, dmg: 280, reload: 1.6, range: 240, speed: 2.5, projectiles: 6, attackType: "snowBurst", superType: "blizzard", desc: "Snow blower" },
+
+    // EPIC (22)
+    { id: 23, name: "Piper", icon: "☂️", rarity: "epic", hp: 2400, dmg: 1520, reload: 2.2, range: 320, speed: 2.5, attackType: "sniper", superType: "grenades", desc: "Long-range sniper" },
+    { id: 24, name: "Pam", icon: "🔩", rarity: "epic", hp: 4800, dmg: 260, reload: 1.4, range: 200, speed: 2.4, projectiles: 9, spread: 35, attackType: "scrapStorm", superType: "healStation", desc: "Healing station" },
+    { id: 25, name: "Frank", icon: "🧟", rarity: "epic", hp: 6200, dmg: 1200, reload: 1.8, range: 160, speed: 2.3, attackType: "hammerWave", superType: "stun", desc: "Stunning hammer" },
+    { id: 26, name: "Bibi", icon: "⚾", rarity: "epic", hp: 4200, dmg: 1300, reload: 1.6, range: 120, speed: 2.6, attackType: "bat", superType: "bubblegum", desc: "Knockback bat" },
+    { id: 27, name: "Bea", icon: "🐝", rarity: "epic", hp: 2400, dmg: 800, reload: 1.4, range: 260, speed: 2.5, attackType: "bee", superType: "slowBee", desc: "Charged shots" },
+    { id: 28, name: "Nani", icon: "🤖", rarity: "epic", hp: 2600, dmg: 980, reload: 1.8, range: 240, speed: 2.5, attackType: "orbs", superType: "peep", desc: "Guided missile" },
+    { id: 29, name: "Edgar", icon: "🧣", rarity: "epic", hp: 3000, dmg: 504, reload: 1.2, range: 90, speed: 2.7, projectiles: 2, attackType: "punch", superType: "jump", lifesteal: 0.25, desc: "Lifesteal assassin" },
+    { id: 30, name: "Griff", icon: "💵", rarity: "epic", hp: 3600, dmg: 280, reload: 1.4, range: 200, speed: 2.5, projectiles: 9, attackType: "coinBurst", superType: "cashWave", desc: "Coin wave attack" },
+    { id: 31, name: "Grom", icon: "🎄", rarity: "epic", hp: 3200, dmg: 980, reload: 2.0, range: 240, speed: 2.4, attackType: "ornamentLob", superType: "bigOrnament", desc: "Area damage" },
+    { id: 32, name: "Bonnie", icon: "🎀", rarity: "epic", hp: 3400, dmg: 1200, reload: 1.8, range: 280, speed: 2.5, attackType: "sniper", superType: "transform", desc: "Transform cannon" },
+    { id: 33, name: "Gus", icon: "👻", rarity: "epic", hp: 2800, dmg: 600, reload: 1.6, range: 200, speed: 2.5, attackType: "spiritBall", superType: "shield", desc: "Spirit shield" },
+    { id: 34, name: "Mandy", icon: "🍬", rarity: "epic", hp: 2600, dmg: 560, reload: 1.5, range: 300, speed: 2.5, attackType: "candy", superType: "focusBeam", desc: "Precision shots" },
+    { id: 35, name: "Maisie", icon: "🎯", rarity: "epic", hp: 3000, dmg: 1100, reload: 1.8, range: 260, speed: 2.5, attackType: "sniper", superType: "quickShot", desc: "Follow-up shots" },
+    { id: 36, name: "Hank", icon: "🐡", rarity: "epic", hp: 4800, dmg: 500, reload: 2.5, range: 160, speed: 2.4, projectiles: 8, attackType: "bubble", superType: "blowUp", desc: "Charged bubble" },
+    { id: 37, name: "Pearl", icon: "🔥", rarity: "epic", hp: 3200, dmg: 560, reload: 1.3, range: 200, speed: 2.5, attackType: "flame", superType: "heatWave", desc: "Heat management" },
+    { id: 38, name: "Larry", icon: "🪰", rarity: "epic", hp: 3400, dmg: 400, reload: 1.4, range: 180, speed: 2.5, attackType: "fly", superType: "swap", desc: "Larry & Lawrie" },
+    { id: 39, name: "Angelo", icon: "🕊️", rarity: "epic", hp: 2800, dmg: 700, reload: 1.6, range: 260, speed: 2.5, attackType: "arrow", superType: "hover", desc: "Flying sniper" },
+    { id: 40, name: "Berry", icon: "🍓", rarity: "epic", hp: 4200, dmg: 480, reload: 1.6, range: 180, speed: 2.5, attackType: "splash", superType: "berryBurst", desc: "Fruit fighter" },
+    { id: 41, name: "Shade", icon: "🌑", rarity: "epic", hp: 3000, dmg: 600, reload: 1.4, range: 200, speed: 2.6, attackType: "shadow", superType: "vanish", desc: "Shadow attacks" },
+    { id: 42, name: "Clancy", icon: "🦞", rarity: "epic", hp: 4000, dmg: 400, reload: 1.5, range: 200, speed: 2.5, projectiles: 5, attackType: "claw", superType: "pincerStrike", desc: "Crustacean fighter" },
+    { id: 43, name: "Moe", icon: "🦎", rarity: "epic", hp: 3600, dmg: 520, reload: 1.5, range: 200, speed: 2.6, attackType: "tongue", superType: "wallClimb", desc: "Gecko abilities" },
+    { id: 44, name: "Juju", icon: "🎭", rarity: "epic", hp: 3200, dmg: 580, reload: 1.6, range: 220, speed: 2.5, attackType: "curse", superType: "voodoo", desc: "Curse attacks" },
+
+    // MYTHIC (30)
+    { id: 45, name: "Mortis", icon: "🦇", rarity: "mythic", hp: 3800, dmg: 900, reload: 2.4, range: 80, speed: 2.7, attackType: "dash", superType: "bats", lifesteal: 0.15, desc: "Dashing vampire" },
+    { id: 46, name: "Tara", icon: "🔮", rarity: "mythic", hp: 3200, dmg: 420, reload: 1.8, range: 220, speed: 2.5, projectiles: 3, attackType: "cards", superType: "blackHole", desc: "Card attacks" },
+    { id: 47, name: "Gene", icon: "🧞", rarity: "mythic", hp: 3800, dmg: 1000, reload: 2.0, range: 260, speed: 2.4, attackType: "magicHand", superType: "pull", desc: "Magic pull" },
+    { id: 48, name: "Max", icon: "⚡", rarity: "mythic", hp: 3200, dmg: 320, reload: 1.4, range: 220, speed: 3.0, projectiles: 4, attackType: "burst", superType: "speedBoost", desc: "Speed boost" },
+    { id: 49, name: "Mr. P", icon: "🐧", rarity: "mythic", hp: 3200, dmg: 700, reload: 1.7, range: 240, speed: 2.4, attackType: "suitcase", superType: "porterSpawn", desc: "Porter spawner" },
+    { id: 50, name: "Sprout", icon: "🌱", rarity: "mythic", hp: 2800, dmg: 940, reload: 1.9, range: 260, speed: 2.4, attackType: "seedBomb", superType: "wall", desc: "Creates walls" },
+    { id: 51, name: "Byron", icon: "💉", rarity: "mythic", hp: 2600, dmg: 520, reload: 1.5, range: 280, speed: 2.5, attackType: "syringe", superType: "healBomb", healMode: true, desc: "Heal or damage" },
+    { id: 52, name: "Squeak", icon: "🟡", rarity: "mythic", hp: 3400, dmg: 900, reload: 1.8, range: 220, speed: 2.4, attackType: "stickyBomb", superType: "bigBlob", desc: "Sticky bombs" },
+    { id: 53, name: "Lou", icon: "🧊", rarity: "mythic", hp: 3200, dmg: 420, reload: 1.5, range: 220, speed: 2.5, projectiles: 3, attackType: "ice", superType: "freezeArea", desc: "Freeze enemies" },
+    { id: 54, name: "Buzz", icon: "🦈", rarity: "mythic", hp: 4200, dmg: 700, reload: 1.4, range: 90, speed: 2.6, attackType: "punch", superType: "hookGrapple", desc: "Hook grapple" },
+    { id: 55, name: "Belle", icon: "🎯", rarity: "mythic", hp: 2600, dmg: 1000, reload: 1.8, range: 280, speed: 2.5, attackType: "electro", superType: "mark", desc: "Bounty hunter" },
+    { id: 56, name: "Ash", icon: "🗑️", rarity: "mythic", hp: 4600, dmg: 450, reload: 1.2, range: 120, speed: 2.5, attackType: "broom", superType: "rage", desc: "Rage mechanic" },
+    { id: 57, name: "Lola", icon: "💅", rarity: "mythic", hp: 3200, dmg: 460, reload: 1.5, range: 200, speed: 2.5, projectiles: 4, attackType: "burst", superType: "clone", desc: "Ego clone" },
+    { id: 58, name: "Fang", icon: "👟", rarity: "mythic", hp: 3800, dmg: 1200, reload: 1.6, range: 100, speed: 2.6, attackType: "kick", superType: "flyingKick", desc: "Chain kicks" },
+    { id: 59, name: "Eve", icon: "🥚", rarity: "mythic", hp: 2800, dmg: 420, reload: 1.6, range: 220, speed: 2.5, projectiles: 3, attackType: "eggShot", superType: "hatchlings", desc: "Egg spawner" },
+    { id: 60, name: "Janet", icon: "🎤", rarity: "mythic", hp: 3200, dmg: 940, reload: 1.7, range: 240, speed: 2.5, attackType: "note", superType: "fly", desc: "Flying super" },
+    { id: 61, name: "Otis", icon: "🎨", rarity: "mythic", hp: 3400, dmg: 460, reload: 1.5, range: 220, speed: 2.4, projectiles: 3, attackType: "paint", superType: "silence", desc: "Silences enemies" },
+    { id: 62, name: "Sam", icon: "🥊", rarity: "mythic", hp: 4800, dmg: 540, reload: 1.3, range: 100, speed: 2.5, attackType: "punch", superType: "knuckle", desc: "Knuckle busters" },
+    { id: 63, name: "Buster", icon: "🎬", rarity: "mythic", hp: 4400, dmg: 1040, reload: 1.8, range: 180, speed: 2.5, attackType: "wave", superType: "shield", desc: "Blocking shield" },
+    { id: 64, name: "Chester", icon: "🃏", rarity: "mythic", hp: 3400, dmg: 640, reload: 1.5, range: 220, speed: 2.6, attackType: "random", superType: "randomSuper", desc: "Random supers" },
+    { id: 65, name: "Gray", icon: "🖼️", rarity: "mythic", hp: 3000, dmg: 880, reload: 1.7, range: 240, speed: 2.5, attackType: "portal", superType: "dimension", desc: "Portal teleport" },
+    { id: 66, name: "R-T", icon: "📺", rarity: "mythic", hp: 4000, dmg: 600, reload: 1.4, range: 180, speed: 2.5, attackType: "beamScan", superType: "split", desc: "Split form" },
+    { id: 67, name: "Willow", icon: "🧠", rarity: "mythic", hp: 2800, dmg: 540, reload: 1.6, range: 240, speed: 2.5, attackType: "mindControl", superType: "possess", desc: "Mind control" },
+    { id: 68, name: "Doug", icon: "🌭", rarity: "mythic", hp: 4200, dmg: 580, reload: 1.5, range: 160, speed: 2.5, attackType: "sausage", superType: "heal", healAmount: 1500, desc: "Hot dog healer" },
+    { id: 69, name: "Chuck", icon: "🚂", rarity: "mythic", hp: 4000, dmg: 700, reload: 1.6, range: 180, speed: 2.5, attackType: "railBlast", superType: "trainCharge", desc: "Train conductor" },
+    { id: 70, name: "Charlie", icon: "🕷️", rarity: "mythic", hp: 3000, dmg: 620, reload: 1.5, range: 220, speed: 2.5, attackType: "web", superType: "cocoon", desc: "Spider web" },
+    { id: 71, name: "Mico", icon: "🐒", rarity: "mythic", hp: 3200, dmg: 720, reload: 1.4, range: 100, speed: 2.8, attackType: "scratch", superType: "swing", desc: "Monkey assassin" },
+    { id: 72, name: "Melodie", icon: "🎵", rarity: "mythic", hp: 3000, dmg: 560, reload: 1.3, range: 200, speed: 2.6, attackType: "orbit", superType: "noteStorm", desc: "Orbiting notes" },
+    { id: 73, name: "Lily", icon: "🌺", rarity: "mythic", hp: 2600, dmg: 1200, reload: 2.0, range: 100, speed: 2.7, attackType: "vanish", superType: "assassinate", desc: "Invisible assassin" },
+    { id: 74, name: "Draco", icon: "🐉", rarity: "mythic", hp: 4400, dmg: 400, reload: 1.4, range: 160, speed: 2.5, attackType: "fireball", superType: "dragonForm", desc: "Dragon form" },
+
+    // LEGENDARY (12)
+    { id: 75, name: "Spike", icon: "🌵", rarity: "legendary", hp: 2400, dmg: 520, reload: 1.8, range: 200, speed: 2.5, attackType: "cactus", superType: "slowField", desc: "Spike explosions" },
+    { id: 76, name: "Crow", icon: "🐦‍⬛", rarity: "legendary", hp: 2400, dmg: 320, reload: 1.4, range: 240, speed: 2.8, projectiles: 3, attackType: "poison", superType: "daggers", poisonDmg: 80, desc: "Poison daggers" },
+    { id: 77, name: "Leon", icon: "🦎", rarity: "legendary", hp: 3200, dmg: 460, reload: 1.7, range: 180, speed: 2.6, projectiles: 4, attackType: "spinner", superType: "invisible", desc: "Invisibility" },
+    { id: 78, name: "Sandy", icon: "💤", rarity: "legendary", hp: 3800, dmg: 920, reload: 1.8, range: 180, speed: 2.5, attackType: "sandWave", superType: "sandstorm", desc: "Sandstorm hide" },
+    { id: 79, name: "Amber", icon: "🔥", rarity: "legendary", hp: 3200, dmg: 280, reload: 0.2, range: 200, speed: 2.5, attackType: "flamethrower", superType: "firePool", desc: "Continuous fire" },
+    { id: 80, name: "Meg", icon: "🤖", rarity: "legendary", hp: 2600, dmg: 240, reload: 1.4, range: 220, speed: 2.5, projectiles: 2, attackType: "burst", superType: "mech", mechHp: 6000, mechDmg: 400, desc: "Mech suit" },
+    { id: 81, name: "Surge", icon: "⚡", rarity: "legendary", hp: 3400, dmg: 1120, reload: 1.8, range: 180, speed: 2.5, attackType: "plasmaBlast", superType: "upgrade", desc: "Upgrades on super" },
+    { id: 82, name: "Cordelius", icon: "🌿", rarity: "legendary", hp: 3600, dmg: 780, reload: 1.6, range: 100, speed: 2.6, attackType: "plant", superType: "shadowRealm", desc: "Shadow realm" },
+    { id: 83, name: "Kit", icon: "🐱", rarity: "legendary", hp: 2800, dmg: 640, reload: 1.4, range: 180, speed: 2.7, attackType: "yarn", superType: "attach", desc: "Attaches to allies" },
+    { id: 84, name: "Kenji", icon: "⚔️", rarity: "legendary", hp: 4200, dmg: 1100, reload: 1.6, range: 120, speed: 2.6, attackType: "dash", superType: "swordDash", desc: "Sword dash" },
+    { id: 85, name: "Meeple", icon: "🎲", rarity: "legendary", hp: 3000, dmg: 600, reload: 1.5, range: 200, speed: 2.5, attackType: "dice", superType: "boardControl", desc: "Board game master" },
+    { id: 86, name: "Ollie", icon: "🛹", rarity: "legendary", hp: 3200, dmg: 680, reload: 1.4, range: 180, speed: 2.8, attackType: "skate", superType: "grind", desc: "Skateboard tricks" }
+];
+
+// Game state
+let game = {
+    player: null,
+    bots: [],
+    projectiles: [],
+    effects: [],
+    pets: [],
+    deployables: [],
+    keys: {},
+    mouse: { x: 400, y: 275, down: false, rightDown: false },
+    kills: 0,
+    selectedBrawler: ALL_BRAWLERS[0],
+    started: false,
+    over: false,
+    poisonZone: { radius: 600, shrinkRate: 0.5, minRadius: 100, centerX: 400, centerY: 275 }
+};
+
+// Render brawler selection
+function renderBrawlerSelect() {
+    const categories = {
+        trophyRoad: ALL_BRAWLERS.filter(b => b.rarity === 'common'),
+        rareBrawlers: ALL_BRAWLERS.filter(b => b.rarity === 'rare'),
+        superRareBrawlers: ALL_BRAWLERS.filter(b => b.rarity === 'superrare'),
+        epicBrawlers: ALL_BRAWLERS.filter(b => b.rarity === 'epic'),
+        mythicBrawlers: ALL_BRAWLERS.filter(b => b.rarity === 'mythic'),
+        legendaryBrawlers: ALL_BRAWLERS.filter(b => b.rarity === 'legendary')
+    };
+
+    Object.keys(categories).forEach(cat => {
+        const container = document.getElementById(cat);
+        container.innerHTML = '';
+        categories[cat].forEach(brawler => {
+            const div = document.createElement('div');
+            div.className = `brawler-select rarity-${brawler.rarity}`;
+            if (brawler.id === game.selectedBrawler.id) div.classList.add('selected');
+            div.innerHTML = `<span class="icon">${brawler.icon}</span><span class="name">${brawler.name}</span>`;
+            div.onclick = () => {
+                game.selectedBrawler = brawler;
+                document.querySelectorAll('.brawler-select').forEach(el => el.classList.remove('selected'));
+                div.classList.add('selected');
+            };
+            container.appendChild(div);
+        });
+    });
+}
+
+// Create entity
+function createEntity(brawler, x, y, isPlayer = false) {
+    return {
+        ...brawler,
+        x, y,
+        currentHp: brawler.hp,
+        maxHp: brawler.hp,
+        ammo: 3,
+        maxAmmo: 3,
+        reloadTimer: 0,
+        superCharge: 0,
+        superReady: false,
+        vx: 0, vy: 0,
+        lastShot: 0,
+        isPlayer,
+        stunned: 0,
+        shielded: 0,
+        speedBoost: 0,
+        poisoned: 0,
+        poisonDmg: 0,
+        invisible: 0,
+        angle: 0,
+        aiTarget: null,
+        aiTimer: 0,
+        surgeLevel: 0
+    };
+}
+
+// Start game
+function startGame() {
+    game.player = createEntity(game.selectedBrawler, 400, 450, true);
+    game.bots = [];
+    game.projectiles = [];
+    game.effects = [];
+    game.pets = [];
+    game.deployables = [];
+    game.kills = 0;
+    game.over = false;
+    game.poisonZone = { radius: 600, shrinkRate: 0.3, minRadius: 80, centerX: 400, centerY: 275 };
+
+    // Spawn 9 AI brawlers
+    for (let i = 0; i < 9; i++) {
+        const brawler = ALL_BRAWLERS[Math.floor(Math.random() * ALL_BRAWLERS.length)];
+        const angle = (i / 9) * Math.PI * 2;
+        const dist = 180 + Math.random() * 100;
+        const x = 400 + Math.cos(angle) * dist;
+        const y = 275 + Math.sin(angle) * dist;
+        game.bots.push(createEntity(brawler, x, y));
+    }
+
+    document.getElementById('overlay').style.display = 'none';
+    document.getElementById('brawlerIcon').textContent = game.player.icon;
+    document.getElementById('brawlerName').textContent = game.player.name;
+    game.started = true;
+    gameLoop();
+}
+
+document.getElementById('startBtn').onclick = startGame;
+renderBrawlerSelect();
+
+// Input handling
+document.addEventListener('keydown', e => { game.keys[e.key.toLowerCase()] = true; });
+document.addEventListener('keyup', e => { game.keys[e.key.toLowerCase()] = false; });
+canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    game.mouse.x = e.clientX - rect.left;
+    game.mouse.y = e.clientY - rect.top;
+});
+canvas.addEventListener('mousedown', e => {
+    if (e.button === 0) game.mouse.down = true;
+    if (e.button === 2) game.mouse.rightDown = true;
+});
+canvas.addEventListener('mouseup', e => {
+    if (e.button === 0) game.mouse.down = false;
+    if (e.button === 2) game.mouse.rightDown = false;
+});
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+    if (e.code === 'Space') game.keys.space = true;
+});
+document.addEventListener('keyup', e => {
+    if (e.code === 'Space') game.keys.space = false;
+});
+
+// Shoot projectile
+function shoot(entity, targetX, targetY, isSuper = false) {
+    if (entity.stunned > 0) return;
+    if (!isSuper && entity.ammo < 1) return;
+
+    const angle = Math.atan2(targetY - entity.y, targetX - entity.x);
+    entity.angle = angle;
+
+    if (!isSuper) {
+        entity.ammo--;
+        entity.lastShot = Date.now();
+    }
+
+    const dmg = isSuper ? (entity.superDmg || entity.dmg * 1.5) : entity.dmg;
+    const range = isSuper ? entity.range * 1.3 : entity.range;
+    const projCount = entity.projectiles || 1;
+    const spread = (entity.spread || 0) * (Math.PI / 180);
+
+    const attackType = isSuper ? entity.superType : entity.attackType;
+
+    // Handle special supers
+    if (isSuper) {
+        entity.superCharge = 0;
+        entity.superReady = false;
+
+        switch (entity.superType) {
+            case 'spawnBear':
+                game.pets.push({
+                    x: entity.x, y: entity.y, hp: 2000, maxHp: 2000, dmg: 400,
+                    team: entity.isPlayer ? 'player' : 'bot', icon: '🐻', speed: 2, range: 60, lastAttack: 0
+                });
+                return;
+            case 'spawnTurret':
+                game.deployables.push({
+                    x: targetX, y: targetY, hp: 1200, maxHp: 1200, dmg: 260, range: 200,
+                    team: entity.isPlayer ? 'player' : 'bot', icon: '🔫', lastAttack: 0, lifetime: 20
+                });
+                return;
+            case 'healStation':
+                game.deployables.push({
+                    x: targetX, y: targetY, hp: 1600, maxHp: 1600, healRange: 120, healAmount: 180,
+                    team: entity.isPlayer ? 'player' : 'bot', icon: '💚', lastAttack: 0, lifetime: 15
+                });
+                return;
+            case 'charge':
+            case 'roll':
+            case 'dash':
+            case 'jump':
+            case 'flyingKick':
+            case 'swordDash':
+                entity.vx = Math.cos(angle) * 12;
+                entity.vy = Math.sin(angle) * 12;
+                entity.dashTime = 0.3;
+                entity.dashDmg = dmg;
+                return;
+            case 'shield':
+                entity.shielded = 4;
+                return;
+            case 'speedBoost':
+                entity.speedBoost = 5;
+                return;
+            case 'invisible':
+                entity.invisible = 6;
+                return;
+            case 'heal':
+                const nearby = [game.player, ...game.bots, ...game.pets].filter(e =>
+                    e && e.currentHp > 0 && ((entity.isPlayer && (e.isPlayer || e.team === 'player')) || (!entity.isPlayer && !e.isPlayer && e.team !== 'player')) &&
+                    Math.hypot(e.x - entity.x, e.y - entity.y) < 150
+                );
+                nearby.forEach(e => { e.currentHp = Math.min(e.maxHp, e.currentHp + (entity.healAmount || 1500)); });
+                game.effects.push({ x: entity.x, y: entity.y, radius: 150, color: '#4CAF50', duration: 0.5, maxDuration: 0.5 });
+                return;
+            case 'blackHole':
+                game.effects.push({
+                    x: targetX, y: targetY, radius: 80, color: '#9C27B0', duration: 1.5, maxDuration: 1.5,
+                    pull: true, dmg: 400, team: entity.isPlayer ? 'player' : 'bot'
+                });
+                return;
+            case 'stun':
+                game.effects.push({
+                    x: targetX, y: targetY, radius: 100, color: '#FFC107', duration: 0.2, maxDuration: 0.2,
+                    stunEffect: 2, dmg: 1200, team: entity.isPlayer ? 'player' : 'bot'
+                });
+                return;
+            case 'upgrade':
+                entity.surgeLevel = Math.min(3, entity.surgeLevel + 1);
+                entity.speed += 0.2;
+                entity.dmg += 100;
+                return;
+            case 'mech':
+                entity.currentHp = entity.mechHp || 6000;
+                entity.maxHp = entity.mechHp || 6000;
+                entity.dmg = entity.mechDmg || 400;
+                entity.inMech = true;
+                return;
+        }
+    }
+
+    // Standard projectile attacks
+    for (let i = 0; i < projCount; i++) {
+        const spreadAngle = projCount > 1 ? angle + (i - (projCount - 1) / 2) * (spread / projCount) : angle;
+        const projSpeed = 8;
+
+        game.projectiles.push({
+            x: entity.x,
+            y: entity.y,
+            vx: Math.cos(spreadAngle) * projSpeed,
+            vy: Math.sin(spreadAngle) * projSpeed,
+            dmg: dmg,
+            range: range,
+            traveled: 0,
+            owner: entity,
+            isSuper,
+            attackType,
+            poison: entity.poisonDmg || 0,
+            lifesteal: entity.lifesteal || 0,
+            color: entity.isPlayer ? '#4FC3F7' : '#FF5252'
+        });
+    }
+
+    if (!isSuper) {
+        entity.superCharge = Math.min(100, entity.superCharge + 12);
+        if (entity.superCharge >= 100) entity.superReady = true;
+    }
+}
+
+// Update entity
+function updateEntity(entity, dt) {
+    if (entity.currentHp <= 0) return;
+
+    // Timers
+    if (entity.stunned > 0) entity.stunned -= dt;
+    if (entity.shielded > 0) entity.shielded -= dt;
+    if (entity.speedBoost > 0) entity.speedBoost -= dt;
+    if (entity.invisible > 0) entity.invisible -= dt;
+    if (entity.poisoned > 0) {
+        entity.poisoned -= dt;
+        entity.currentHp -= entity.poisonDmg * dt;
+    }
+
+    // Reload ammo
+    if (entity.ammo < entity.maxAmmo) {
+        entity.reloadTimer += dt;
+        if (entity.reloadTimer >= entity.reload) {
+            entity.ammo = Math.min(entity.maxAmmo, entity.ammo + 1);
+            entity.reloadTimer = 0;
+        }
+    }
+
+    // Dash movement
+    if (entity.dashTime > 0) {
+        entity.dashTime -= dt;
+        entity.x += entity.vx;
+        entity.y += entity.vy;
+
+        // Dash damage
+        const targets = entity.isPlayer ? game.bots : [game.player, ...game.bots.filter(b => b !== entity)];
+        targets.forEach(t => {
+            if (t && t.currentHp > 0 && Math.hypot(t.x - entity.x, t.y - entity.y) < 40) {
+                dealDamage(t, entity.dashDmg, entity);
+            }
+        });
+    }
+
+    // Poison zone damage
+    const distFromCenter = Math.hypot(entity.x - game.poisonZone.centerX, entity.y - game.poisonZone.centerY);
+    if (distFromCenter > game.poisonZone.radius) {
+        entity.currentHp -= 200 * dt;
+    }
+
+    // Keep in bounds
+    entity.x = Math.max(20, Math.min(780, entity.x));
+    entity.y = Math.max(20, Math.min(530, entity.y));
+}
+
+// Deal damage
+function dealDamage(target, dmg, source) {
+    if (target.shielded > 0) dmg *= 0.3;
+    target.currentHp -= dmg;
+
+    if (source && source.lifesteal) {
+        source.currentHp = Math.min(source.maxHp, source.currentHp + dmg * source.lifesteal);
+    }
+
+    if (source) {
+        source.superCharge = Math.min(100, source.superCharge + 8);
+        if (source.superCharge >= 100) source.superReady = true;
+    }
+
+    if (target.currentHp <= 0 && source && source.isPlayer) {
+        game.kills++;
+    }
+}
+
+// Update projectiles
+function updateProjectiles(dt) {
+    game.projectiles = game.projectiles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.traveled += Math.hypot(p.vx, p.vy);
+
+        if (p.traveled > p.range || p.x < 0 || p.x > 800 || p.y < 0 || p.y > 550) {
+            return false;
+        }
+
+        // Check collision
+        const targets = p.owner.isPlayer ? game.bots : [game.player];
+        for (let t of targets) {
+            if (t && t.currentHp > 0 && Math.hypot(t.x - p.x, t.y - p.y) < 25) {
+                dealDamage(t, p.dmg, p.owner);
+                if (p.poison > 0) {
+                    t.poisoned = 4;
+                    t.poisonDmg = p.poison;
+                }
+                game.effects.push({ x: p.x, y: p.y, radius: 15, color: p.color, duration: 0.15, maxDuration: 0.15 });
+                return false;
+            }
+        }
+        return true;
+    });
+}
+
+// Update effects
+function updateEffects(dt) {
+    game.effects = game.effects.filter(e => {
+        e.duration -= dt;
+
+        if (e.pull) {
+            const targets = e.team === 'player' ? game.bots : [game.player];
+            targets.forEach(t => {
+                if (t && t.currentHp > 0) {
+                    const dist = Math.hypot(t.x - e.x, t.y - e.y);
+                    if (dist < e.radius) {
+                        const angle = Math.atan2(e.y - t.y, e.x - t.x);
+                        t.x += Math.cos(angle) * 3;
+                        t.y += Math.sin(angle) * 3;
+                        if (e.duration < 0.1) dealDamage(t, e.dmg, null);
+                    }
+                }
+            });
+        }
+
+        if (e.stunEffect) {
+            const targets = e.team === 'player' ? game.bots : [game.player];
+            targets.forEach(t => {
+                if (t && t.currentHp > 0 && Math.hypot(t.x - e.x, t.y - e.y) < e.radius) {
+                    t.stunned = e.stunEffect;
+                    dealDamage(t, e.dmg, null);
+                }
+            });
+        }
+
+        return e.duration > 0;
+    });
+}
+
+// Update pets
+function updatePets(dt) {
+    game.pets = game.pets.filter(pet => {
+        if (pet.hp <= 0) return false;
+
+        // Find target
+        const targets = pet.team === 'player' ? game.bots : [game.player];
+        let closest = null, closestDist = Infinity;
+        targets.forEach(t => {
+            if (t && t.currentHp > 0) {
+                const d = Math.hypot(t.x - pet.x, t.y - pet.y);
+                if (d < closestDist) { closest = t; closestDist = d; }
+            }
+        });
+
+        if (closest) {
+            if (closestDist > pet.range) {
+                const angle = Math.atan2(closest.y - pet.y, closest.x - pet.x);
+                pet.x += Math.cos(angle) * pet.speed;
+                pet.y += Math.sin(angle) * pet.speed;
+            } else if (Date.now() - pet.lastAttack > 1000) {
+                dealDamage(closest, pet.dmg, null);
+                pet.lastAttack = Date.now();
+            }
+        }
+        return true;
+    });
+}
+
+// Update deployables
+function updateDeployables(dt) {
+    game.deployables = game.deployables.filter(d => {
+        if (d.hp <= 0) return false;
+        d.lifetime -= dt;
+        if (d.lifetime <= 0) return false;
+
+        if (d.dmg) {
+            const targets = d.team === 'player' ? game.bots : [game.player];
+            let closest = null, closestDist = Infinity;
+            targets.forEach(t => {
+                if (t && t.currentHp > 0) {
+                    const dist = Math.hypot(t.x - d.x, t.y - d.y);
+                    if (dist < closestDist && dist < d.range) { closest = t; closestDist = dist; }
+                }
+            });
+            if (closest && Date.now() - d.lastAttack > 500) {
+                game.projectiles.push({
+                    x: d.x, y: d.y,
+                    vx: (closest.x - d.x) / closestDist * 8,
+                    vy: (closest.y - d.y) / closestDist * 8,
+                    dmg: d.dmg, range: d.range, traveled: 0,
+                    owner: { isPlayer: d.team === 'player' },
+                    color: d.team === 'player' ? '#4FC3F7' : '#FF5252'
+                });
+                d.lastAttack = Date.now();
+            }
+        }
+
+        if (d.healAmount) {
+            const allies = d.team === 'player' ? [game.player, ...game.pets.filter(p => p.team === 'player')] : game.bots;
+            allies.forEach(a => {
+                if (a && a.currentHp > 0 && a.currentHp < a.maxHp && Math.hypot(a.x - d.x, a.y - d.y) < d.healRange) {
+                    a.currentHp = Math.min(a.maxHp, a.currentHp + d.healAmount * dt);
+                }
+            });
+        }
+
+        return true;
+    });
+}
+
+// AI Logic
+function updateAI(bot, dt) {
+    if (bot.currentHp <= 0 || bot.stunned > 0) return;
+
+    bot.aiTimer -= dt;
+    if (bot.aiTimer <= 0) {
+        bot.aiTimer = 0.5 + Math.random() * 0.5;
+
+        // Find target (prioritize player, then closest bot)
+        let targets = [game.player, ...game.bots.filter(b => b !== bot && b.currentHp > 0)];
+        let closest = null, closestDist = Infinity;
+        targets.forEach(t => {
+            if (t && t.currentHp > 0) {
+                const d = Math.hypot(t.x - bot.x, t.y - bot.y);
+                if (d < closestDist) { closest = t; closestDist = d; }
+            }
+        });
+        bot.aiTarget = closest;
+    }
+
+    if (!bot.aiTarget || bot.aiTarget.currentHp <= 0) return;
+
+    const target = bot.aiTarget;
+    const dist = Math.hypot(target.x - bot.x, target.y - bot.y);
+    const angle = Math.atan2(target.y - bot.y, target.x - bot.x);
+
+    // Movement
+    const idealDist = bot.range * 0.7;
+    if (dist > idealDist + 30) {
+        bot.x += Math.cos(angle) * bot.speed;
+        bot.y += Math.sin(angle) * bot.speed;
+    } else if (dist < idealDist - 30) {
+        bot.x -= Math.cos(angle) * bot.speed * 0.7;
+        bot.y -= Math.sin(angle) * bot.speed * 0.7;
+    }
+
+    // Stay in zone
+    const zoneDir = Math.atan2(game.poisonZone.centerY - bot.y, game.poisonZone.centerX - bot.x);
+    const zoneDist = Math.hypot(bot.x - game.poisonZone.centerX, bot.y - game.poisonZone.centerY);
+    if (zoneDist > game.poisonZone.radius - 50) {
+        bot.x += Math.cos(zoneDir) * 2;
+        bot.y += Math.sin(zoneDir) * 2;
+    }
+
+    // Shoot
+    if (dist < bot.range && bot.ammo > 0 && Math.random() > 0.3) {
+        shoot(bot, target.x, target.y);
+    }
+
+    // Use super
+    if (bot.superReady && Math.random() > 0.5) {
+        shoot(bot, target.x, target.y, true);
+    }
+}
+
+// Update player
+function updatePlayer(dt) {
+    const p = game.player;
+    if (!p || p.currentHp <= 0) return;
+
+    // Movement
+    let mx = 0, my = 0;
+    if (game.keys['w'] || game.keys['arrowup']) my -= 1;
+    if (game.keys['s'] || game.keys['arrowdown']) my += 1;
+    if (game.keys['a'] || game.keys['arrowleft']) mx -= 1;
+    if (game.keys['d'] || game.keys['arrowright']) mx += 1;
+
+    if (mx !== 0 || my !== 0) {
+        const len = Math.hypot(mx, my);
+        const speed = p.speed * (p.speedBoost > 0 ? 1.4 : 1);
+        p.x += (mx / len) * speed * 1.5;
+        p.y += (my / len) * speed * 1.5;
+    }
+
+    // Shoot
+    if (game.mouse.down && p.ammo >= 1) {
+        const now = Date.now();
+        if (now - p.lastShot > 200) {
+            shoot(p, game.mouse.x, game.mouse.y);
+        }
+    }
+
+    // Super
+    if ((game.keys.space || game.mouse.rightDown) && p.superReady) {
+        shoot(p, game.mouse.x, game.mouse.y, true);
+    }
+
+    // Manual reload
+    if (game.keys['r']) {
+        p.reloadTimer += dt * 2;
+    }
+
+    p.angle = Math.atan2(game.mouse.y - p.y, game.mouse.x - p.x);
+}
+
+// Update UI
+function updateUI() {
+    const p = game.player;
+    if (!p) return;
+
+    document.getElementById('healthFill').style.width = (p.currentHp / p.maxHp * 100) + '%';
+    document.getElementById('superFill').style.width = p.superCharge + '%';
+
+    const ammoEls = document.querySelectorAll('.ammo');
+    ammoEls.forEach((el, i) => {
+        el.classList.toggle('empty', i >= Math.floor(p.ammo));
+    });
+
+    const aliveCount = 1 + game.bots.filter(b => b.currentHp > 0).length;
+    document.getElementById('aliveCount').textContent = aliveCount;
+    document.getElementById('killCount').textContent = game.kills;
+}
+
+// Check game over
+function checkGameOver() {
+    if (game.player.currentHp <= 0) {
+        endGame(false);
+    } else if (game.bots.filter(b => b.currentHp > 0).length === 0) {
+        endGame(true);
+    }
+}
+
+function endGame(victory) {
+    game.over = true;
+    document.getElementById('resultTitle').textContent = victory ? '🏆 VICTORY!' : '💀 DEFEATED';
+    document.getElementById('resultText').textContent = victory ? 'You are the last brawler standing!' : 'Better luck next time!';
+    document.getElementById('finalKills').textContent = game.kills;
+    document.getElementById('menuPanel').style.display = 'none';
+    document.getElementById('gameOverPanel').style.display = 'block';
+    document.getElementById('overlay').style.display = 'flex';
+}
+
+// Render
+function render() {
+    // Background
+    ctx.fillStyle = '#3d6b3d';
+    ctx.fillRect(0, 0, 800, 550);
+
+    // Grid pattern
+    ctx.strokeStyle = '#2d5a2d';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < 800; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, 550);
+        ctx.stroke();
+    }
+    for (let y = 0; y < 550; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(800, y);
+        ctx.stroke();
+    }
+
+    // Poison zone
+    ctx.beginPath();
+    ctx.arc(game.poisonZone.centerX, game.poisonZone.centerY, game.poisonZone.radius, 0, Math.PI * 2);
+    ctx.strokeStyle = '#9C27B0';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(156, 39, 176, 0.1)';
+    ctx.fill();
+
+    // Draw deployables
+    game.deployables.forEach(d => {
+        ctx.fillStyle = d.team === 'player' ? '#4CAF50' : '#f44336';
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, 20, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(d.icon, d.x, d.y + 5);
+    });
+
+    // Draw pets
+    game.pets.forEach(pet => {
+        ctx.fillStyle = pet.team === 'player' ? '#8BC34A' : '#FF7043';
+        ctx.beginPath();
+        ctx.arc(pet.x, pet.y, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(pet.icon, pet.x, pet.y + 6);
+
+        // Health bar
+        ctx.fillStyle = '#333';
+        ctx.fillRect(pet.x - 15, pet.y - 28, 30, 5);
+        ctx.fillStyle = '#4CAF50';
+        ctx.fillRect(pet.x - 15, pet.y - 28, 30 * (pet.hp / pet.maxHp), 5);
+    });
+
+    // Draw bots
+    game.bots.forEach(bot => {
+        if (bot.currentHp <= 0) return;
+        if (bot.invisible > 0) return;
+
+        const radius = 18;
+
+        // Body
+        ctx.fillStyle = '#f44336';
+        ctx.beginPath();
+        ctx.arc(bot.x, bot.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Direction indicator
+        ctx.strokeStyle = '#b71c1c';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(bot.x, bot.y);
+        ctx.lineTo(bot.x + Math.cos(bot.angle) * radius, bot.y + Math.sin(bot.angle) * radius);
+        ctx.stroke();
+
+        // Icon
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(bot.icon, bot.x, bot.y + 5);
+
+        // Health bar
+        ctx.fillStyle = '#333';
+        ctx.fillRect(bot.x - 20, bot.y - 30, 40, 6);
+        ctx.fillStyle = bot.shielded > 0 ? '#FFD700' : '#f44336';
+        ctx.fillRect(bot.x - 20, bot.y - 30, 40 * (bot.currentHp / bot.maxHp), 6);
+
+        // Super indicator
+        if (bot.superReady) {
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(bot.x, bot.y, radius + 4, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    });
+
+    // Draw player
+    const p = game.player;
+    if (p && p.currentHp > 0) {
+        const radius = 20;
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y + 15, radius, radius * 0.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Body
+        ctx.fillStyle = p.invisible > 0 ? 'rgba(33, 150, 243, 0.3)' : '#2196F3';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Shield effect
+        if (p.shielded > 0) {
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radius + 5, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // Speed boost effect
+        if (p.speedBoost > 0) {
+            ctx.strokeStyle = '#00E5FF';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radius + 8, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // Direction indicator
+        ctx.strokeStyle = '#1565C0';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x + Math.cos(p.angle) * radius * 1.3, p.y + Math.sin(p.angle) * radius * 1.3);
+        ctx.stroke();
+
+        // Icon
+        ctx.font = '20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.icon, p.x, p.y + 6);
+
+        // Super ready indicator
+        if (p.superReady) {
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radius + 10, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+    }
+
+    // Draw projectiles
+    game.projectiles.forEach(proj => {
+        ctx.fillStyle = proj.color;
+        ctx.beginPath();
+        ctx.arc(proj.x, proj.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Trail
+        ctx.strokeStyle = proj.color;
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(proj.x, proj.y);
+        ctx.lineTo(proj.x - proj.vx * 2, proj.y - proj.vy * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+    });
+
+    // Draw effects
+    game.effects.forEach(e => {
+        const alpha = e.duration / e.maxDuration;
+        ctx.strokeStyle = e.color;
+        ctx.lineWidth = 4;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.radius * (1.2 - alpha * 0.2), 0, Math.PI * 2);
+        ctx.stroke();
+        if (e.pull) {
+            ctx.fillStyle = e.color;
+            ctx.globalAlpha = alpha * 0.3;
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    });
+
+    // Aim line
+    if (p && p.currentHp > 0) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        const aimDist = Math.min(p.range, Math.hypot(game.mouse.x - p.x, game.mouse.y - p.y));
+        ctx.lineTo(p.x + Math.cos(p.angle) * aimDist, p.y + Math.sin(p.angle) * aimDist);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+}
+
+// Game loop
+let lastTime = Date.now();
+function gameLoop() {
+    if (!game.started || game.over) return;
+
+    const now = Date.now();
+    const dt = Math.min((now - lastTime) / 1000, 0.05);
+    lastTime = now;
+
+    // Shrink poison zone
+    game.poisonZone.radius = Math.max(game.poisonZone.minRadius, game.poisonZone.radius - game.poisonZone.shrinkRate * dt);
+
+    updatePlayer(dt);
+    updateEntity(game.player, dt);
+
+    game.bots.forEach(bot => {
+        if (bot.currentHp > 0) {
+            updateAI(bot, dt);
+            updateEntity(bot, dt);
+        }
+    });
+
+    updateProjectiles(dt);
+    updateEffects(dt);
+    updatePets(dt);
+    updateDeployables(dt);
+    updateUI();
+    checkGameOver();
+
+    render();
+    requestAnimationFrame(gameLoop);
+}
+</script>
+</body>
+</html>
