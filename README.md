@@ -1,2 +1,2 @@
 # BrawlStars
-A copy of Brawl Stars
+A copy of the game, Brawl Stars!
